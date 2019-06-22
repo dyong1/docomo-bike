@@ -5,11 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "node",
+            "name": "Launch",
+            "type": "go",
             "request": "launch",
-            "name": "Launch Program",
-            "program": "${workspaceFolder}/index.js",
-            "envFile": "${workspaceFolder}/.env"
+            "mode": "auto",
+            "program": "${workspaceRoot}/cmd/main.go",
+            "envFile": "${workspaceFolder}/.env",
+            "args": []
         }
     ]
 }
