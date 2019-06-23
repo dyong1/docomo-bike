@@ -1,6 +1,7 @@
-package docomo
+package login
 
 import (
+	"docomo-bike/internal/libs/logger"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -9,18 +10,32 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/gojektech/heimdall/httpclient"
 
 	"github.com/pkg/errors"
 )
 
 const (
-	LOGIN_EVENT_NO     = "21401"
-	LOGIN_API_ENDPOINT = "https://tcc.docomo-cycle.jp/cycle/TYO/cs_web_main.php"
+	loginEventNo     = "21401"
+	loginAPIEndpoint = "https://tcc.docomo-cycle.jp/cycle/TYO/cs_web_main.php"
 )
+
+var (
+	sessionIDRegex = regexp.MustCompile("value=\"(.+)\"")
+)
+
+type Client interface {
+	Login(id string, password string) (string, error)
+}
+
+type ScrappingClient struct {
+	HTTPClient *httpclient.Client
+	Logger     *logger.Logger
+}
 
 func (c *ScrappingClient) Login(userID string, password string) (string, error) {
 	data := url.Values{}
-	data.Add("EventNo", LOGIN_EVENT_NO)
+	data.Add("EventNo", loginEventNo)
 	data.Add("MemberID", userID)
 	data.Add("Password", password)
 	dataEncoded := data.Encode()
@@ -30,7 +45,7 @@ func (c *ScrappingClient) Login(userID string, password string) (string, error) 
 	c.Logger.Debugf("Login request header: %s", spew.Sdump(headers))
 	c.Logger.Debugf("Login request body: %s", spew.Sdump(dataEncoded))
 
-	res, err := c.HTTPClient.Post(LOGIN_API_ENDPOINT, strings.NewReader(dataEncoded), headers)
+	res, err := c.HTTPClient.Post(loginAPIEndpoint, strings.NewReader(dataEncoded), headers)
 	if err != nil {
 		return "", errors.Wrap(err, "")
 	}
@@ -41,20 +56,21 @@ func (c *ScrappingClient) Login(userID string, password string) (string, error) 
 	}
 	lines := strings.Split(string(htmlBytes), "\n")
 	c.Logger.Debugf("Login response html: %s", spew.Sdump(lines))
+
 	var sessionIDLine string
 	for _, l := range lines {
 		if strings.Contains(l, "SessionID") {
 			sessionIDLine = l
+			break
 		}
-		break
 	}
 	if sessionIDLine == "" {
 		return "", fmt.Errorf("SessionID is not found in the HTML")
 	}
-	r := regexp.MustCompile("/value=\"(.+)\"/")
-	matches := r.FindStringSubmatch(sessionIDLine)
+	matches := sessionIDRegex.FindStringSubmatch(sessionIDLine)
 	if len(matches) == 0 {
 		return "", fmt.Errorf("SessionID is not found in the HTML")
 	}
+
 	return matches[1], nil
 }

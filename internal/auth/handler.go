@@ -1,13 +1,14 @@
 package auth
 
 import (
+	"context"
 	"docomo-bike/internal/libs/httpreq"
 	"docomo-bike/internal/libs/httpres"
 	"fmt"
 	"net/http"
 )
 
-func HandleAuthorize(jwtService JWTService) http.HandlerFunc {
+func HandleAuthorize(authService JWTAuthService) http.HandlerFunc {
 	type requestBody struct {
 		UserID        string `json:"userId"`
 		PlainPassword string `json:"plainPassword"`
@@ -22,7 +23,7 @@ func HandleAuthorize(jwtService JWTService) http.HandlerFunc {
 			return
 		}
 
-		authResult, err := jwtService.JWTAuthorize(reqBody.UserID, reqBody.PlainPassword)
+		authResult, err := authService.Authorize(reqBody.UserID, reqBody.PlainPassword)
 		if err != nil {
 			httpres.Error(w, http.StatusInternalServerError, err)
 			return
@@ -33,7 +34,7 @@ func HandleAuthorize(jwtService JWTService) http.HandlerFunc {
 	}
 }
 
-func RequireAuth(jwtService JWTService) func(http.HandlerFunc) http.HandlerFunc {
+func UseAuth(authService JWTAuthService) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			hh := r.Header["Authorization"]
@@ -41,11 +42,14 @@ func RequireAuth(jwtService JWTService) func(http.HandlerFunc) http.HandlerFunc 
 				httpres.Error(w, http.StatusUnauthorized, fmt.Errorf("Invalid authorization"))
 				return
 			}
-			if err := jwtService.VerifyJWTToken(hh[1]); err != nil {
+			auth, err := authService.AuthFromToken(hh[1])
+			if err != nil {
 				httpres.Error(w, http.StatusUnauthorized, err)
 				return
 			}
-			next(w, r)
+			next(w, r.WithContext(context.WithValue(r.Context(), AuthContextKey{}, auth)))
 		}
 	}
 }
+
+type AuthContextKey struct{}

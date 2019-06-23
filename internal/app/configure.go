@@ -3,11 +3,13 @@ package app
 import (
 	"docomo-bike/internal/auth"
 	"docomo-bike/internal/config"
-	"docomo-bike/internal/docomo"
+	"docomo-bike/internal/docomo/login"
 	"docomo-bike/internal/libs/logger"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/gojektech/heimdall/httpclient"
 
 	"github.com/dgrijalva/jwt-go"
 
@@ -24,11 +26,8 @@ func (a *App) Configure(cfg config.Config) error {
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
-	docomoClient := docomo.NewScrappingClient(appLogger)
-	authService := &auth.DocomoJWTAuthService{
-		JWT:          jwtConfig,
-		DocomoClient: docomoClient,
-	}
+
+	authService := authService(jwtConfig, appLogger)
 
 	{
 		router := chi.NewRouter()
@@ -44,19 +43,25 @@ func (a *App) Configure(cfg config.Config) error {
 }
 
 func jwtConfig(cfg config.Config) (auth.JWTConfig, error) {
-	privateKey, err := ioutil.ReadFile(cfg.JWTPrivateKeyFilePath)
-	if err != nil {
-		return auth.JWTConfig{}, errors.Wrap(err, "")
-	}
-	publicKey, err := ioutil.ReadFile(cfg.JWTPublicKeyFilePath)
+	secret, err := ioutil.ReadFile(cfg.JWTSecretFilePath)
 	if err != nil {
 		return auth.JWTConfig{}, errors.Wrap(err, "")
 	}
 	return auth.JWTConfig{
 		ExpiresIn:     time.Duration(cfg.JWTExpiresInSec * 1000 * 1000),
 		Issuer:        cfg.JWTIssuer,
-		PrivateKey:    privateKey,
-		PublicKey:     publicKey,
+		Secret:        secret,
 		SigningMethod: jwt.GetSigningMethod(cfg.JWTSigningMethod),
 	}, nil
+}
+
+func authService(jwtConfig auth.JWTConfig, logger *logger.Logger) *auth.DocomoJWTAuthService {
+	loginClient := &login.ScrappingClient{
+		HTTPClient: httpclient.NewClient(),
+		Logger:     logger,
+	}
+	return &auth.DocomoJWTAuthService{
+		JWT:         jwtConfig,
+		LoginClient: loginClient,
+	}
 }

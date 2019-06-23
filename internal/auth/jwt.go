@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"docomo-bike/internal/docomo"
+	login "docomo-bike/internal/docomo/login"
 	"fmt"
 	"time"
 
@@ -10,35 +10,41 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type JWTService interface {
-	JWTAuthorize(userID string, plainPassword string) (*JWTAuthResult, error)
-	VerifyJWTToken(tokenString string) error
+type JWTAuthService interface {
+	Authorize(userID string, plainPassword string) (*JWTAuthResult, error)
+	AuthFromToken(tokenString string) (*Auth, error)
 }
 
 type JWTAuthResult struct {
+	UserID      string
 	TokenString string
 }
 
 type JWTConfig struct {
 	ExpiresIn     time.Duration
 	Issuer        string
-	PrivateKey    []byte
-	PublicKey     []byte
+	Secret        []byte
 	SigningMethod jwt.SigningMethod
 }
+type Auth struct {
+	UserID     string
+	SessionKey string
+}
+
 type jwtClaims struct {
 	jwt.StandardClaims
 
+	UserID     string
 	SessionKey string
 }
 
 type DocomoJWTAuthService struct {
-	JWT          JWTConfig
-	DocomoClient docomo.Client
+	JWT         JWTConfig
+	LoginClient login.Client
 }
 
-func (s *DocomoJWTAuthService) JWTAuthorize(userID string, plainPassword string) (*JWTAuthResult, error) {
-	sessionKey, err := s.DocomoClient.Login(userID, plainPassword)
+func (s *DocomoJWTAuthService) Authorize(userID string, plainPassword string) (*JWTAuthResult, error) {
+	sessionKey, err := s.LoginClient.Login(userID, plainPassword)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Failed to get session key [userID=%s]", userID))
 	}
@@ -48,24 +54,33 @@ func (s *DocomoJWTAuthService) JWTAuthorize(userID string, plainPassword string)
 			ExpiresAt: time.Now().Add(s.JWT.ExpiresIn).Unix(),
 			Issuer:    s.JWT.Issuer,
 		},
+		UserID:     userID,
 		SessionKey: sessionKey,
 	})
-	ss, err := token.SignedString(s.JWT.PrivateKey)
+	ss, err := token.SignedString(s.JWT.Secret)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Failed to sign claims [userId=%s]", userID))
 	}
 
 	return &JWTAuthResult{
+		UserID:      userID,
 		TokenString: ss,
 	}, nil
 }
 
-func (s *DocomoJWTAuthService) VerifyJWTToken(tokenString string) error {
-	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return s.JWT.PublicKey, nil
+func (s *DocomoJWTAuthService) AuthFromToken(tokenString string) (*Auth, error) {
+	var claims jwtClaims
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
+		return s.JWT.Secret, nil
 	})
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Invalid token string [value=%s]", tokenString))
+		return nil, errors.Wrap(err, fmt.Sprintf("Failed to parse token [value=%s]", tokenString))
 	}
-	return nil
+	if !token.Valid {
+		return nil, errors.Wrap(err, fmt.Sprintf("Invalid token string [value=%s]", tokenString))
+	}
+	return &Auth{
+		SessionKey: claims.SessionKey,
+		UserID:     claims.UserID,
+	}, nil
 }
