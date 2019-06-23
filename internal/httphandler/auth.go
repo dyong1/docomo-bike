@@ -1,14 +1,15 @@
-package auth
+package httphandler
 
 import (
 	"context"
+	"docomo-bike/internal/auth"
 	"docomo-bike/internal/libs/httpreq"
 	"docomo-bike/internal/libs/httpres"
 	"fmt"
 	"net/http"
 )
 
-func HandleAuthorize(authService JWTAuthService) http.HandlerFunc {
+func HandleAuthorize(authService auth.JWTService) http.HandlerFunc {
 	type requestBody struct {
 		UserID        string `json:"userId"`
 		PlainPassword string `json:"plainPassword"`
@@ -34,9 +35,9 @@ func HandleAuthorize(authService JWTAuthService) http.HandlerFunc {
 	}
 }
 
-func UseAuth(authService JWTAuthService) func(http.HandlerFunc) http.HandlerFunc {
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+func UseAuth(authService auth.JWTService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			hh := r.Header["Authorization"]
 			if len(hh) != 2 {
 				httpres.Error(w, http.StatusUnauthorized, fmt.Errorf("Invalid authorization"))
@@ -47,8 +48,8 @@ func UseAuth(authService JWTAuthService) func(http.HandlerFunc) http.HandlerFunc
 				httpres.Error(w, http.StatusUnauthorized, err)
 				return
 			}
-			next(w, r.WithContext(context.WithValue(r.Context(), AuthContextKey{}, auth)))
-		}
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), AuthContextKey{}, auth)))
+		})
 	}
 }
 

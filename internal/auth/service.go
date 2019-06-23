@@ -1,7 +1,7 @@
 package auth
 
 import (
-	login "docomo-bike/internal/docomo/login"
+	login "docomo-bike/internal/libs/docomo/login"
 	"fmt"
 	"time"
 
@@ -10,7 +10,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type JWTAuthService interface {
+type JWTService interface {
 	Authorize(userID string, plainPassword string) (*JWTAuthResult, error)
 	AuthFromToken(tokenString string) (*Auth, error)
 }
@@ -38,12 +38,12 @@ type jwtClaims struct {
 	SessionKey string
 }
 
-type DocomoJWTAuthService struct {
+type DocomoJWTService struct {
 	JWT         JWTConfig
 	LoginClient login.Client
 }
 
-func (s *DocomoJWTAuthService) Authorize(userID string, plainPassword string) (*JWTAuthResult, error) {
+func (s *DocomoJWTService) Authorize(userID string, plainPassword string) (*JWTAuthResult, error) {
 	sessionKey, err := s.LoginClient.Login(userID, plainPassword)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Failed to get session key [userID=%s]", userID))
@@ -68,7 +68,7 @@ func (s *DocomoJWTAuthService) Authorize(userID string, plainPassword string) (*
 	}, nil
 }
 
-func (s *DocomoJWTAuthService) AuthFromToken(tokenString string) (*Auth, error) {
+func (s *DocomoJWTService) AuthFromToken(tokenString string) (*Auth, error) {
 	var claims jwtClaims
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
 		return s.JWT.Secret, nil
