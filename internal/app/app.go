@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 	"docomo-bike/internal/config"
+	"docomo-bike/internal/libs/logger"
 
 	"github.com/go-chi/chi"
-	"github.com/google/logger"
 	"github.com/pkg/errors"
 )
 

@@ -18,7 +18,7 @@ func HandleAuthorize(jwtService JWTService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var reqBody requestBody
 		if err := httpreq.JSONBody(r, &reqBody); err != nil {
-			httpres.Error(w, http.StatusInternalServerError, err)
+			httpres.Error(w, http.StatusBadRequest, err)
 			return
 		}
 

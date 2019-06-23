@@ -1,71 +1,60 @@
 package docomo
 
-func (c *ScrappingClient) Login(id string, password string) (string, error) {
-	panic("not implemented")
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"regexp"
+	"strings"
+
+	"github.com/davecgh/go-spew/spew"
+
+	"github.com/pkg/errors"
+)
+
+const (
+	LOGIN_EVENT_NO     = "21401"
+	LOGIN_API_ENDPOINT = "https://tcc.docomo-cycle.jp/cycle/TYO/cs_web_main.php"
+)
+
+func (c *ScrappingClient) Login(userID string, password string) (string, error) {
+	data := url.Values{}
+	data.Add("EventNo", LOGIN_EVENT_NO)
+	data.Add("MemberID", userID)
+	data.Add("Password", password)
+	dataEncoded := data.Encode()
+	headers := http.Header{}
+	headers.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	c.Logger.Debugf("Login request header: %s", spew.Sdump(headers))
+	c.Logger.Debugf("Login request body: %s", spew.Sdump(dataEncoded))
+
+	res, err := c.HTTPClient.Post(LOGIN_API_ENDPOINT, strings.NewReader(dataEncoded), headers)
+	if err != nil {
+		return "", errors.Wrap(err, "")
+	}
+
+	htmlBytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "")
+	}
+	lines := strings.Split(string(htmlBytes), "\n")
+	c.Logger.Debugf("Login response html: %s", spew.Sdump(lines))
+	var sessionIDLine string
+	for _, l := range lines {
+		if strings.Contains(l, "SessionID") {
+			sessionIDLine = l
+		}
+		break
+	}
+	if sessionIDLine == "" {
+		return "", fmt.Errorf("SessionID is not found in the HTML")
+	}
+	r := regexp.MustCompile("/value=\"(.+)\"/")
+	matches := r.FindStringSubmatch(sessionIDLine)
+	if len(matches) == 0 {
+		return "", fmt.Errorf("SessionID is not found in the HTML")
+	}
+	return matches[1], nil
 }
-
-// const request = require("request-promise-native")
-
-// const EVENT_NO = 21401
-// const API_ENDPOINT = "https://tcc.docomo-cycle.jp/cycle/TYO/cs_web_main.php"
-
-// module.exports.login = async function login(userId, password) {
-// 	const options = {
-// 		form: {
-// 			"EventNo": EVENT_NO,
-// 			"MemberID": userId,
-// 			"Password": password,
-// 		}
-// 	}
-// 	const res = await request.post(API_ENDPOINT, options)
-// 	const sessionLine = res.split("\n").filter(line => line.includes("SessionID"))[0]
-// 	if (!sessionLine) {
-// 		throw new Error("No session line is found in the response")
-// 	}
-// 	const matches = /value="(.+)"/.exec(sessionLine)
-// 	return {
-// 		userId: userId,
-// 		sessionKey: matches[1]
-// 	}
-// }
-
-// const request = require("request-promise-native")
-// const iconv = require("iconv-lite")
-
-// const EVENT_NO = 25701
-// const API_ENDPOINT = "https://tcc.docomo-cycle.jp/cycle/TYO/cs_web_main.php"
-// const RESPONSE_ENCODING = "Shift_JIS"
-
-// module.exports.stations = {
-//     roppongiHills: 10082,
-//     nishiSimbashi1Chome: 10070,
-// }
-
-// module.exports.countBikesAt = async function countBikeAt(auth, stationId) {
-//     const station = await getStation(auth, stationId)
-//     return station.totalBikes
-// }
-
-// module.exports.getStation = async function getStation(auth, stationId) {
-//     const options = {
-//         form: {
-//             "EventNo": EVENT_NO,
-//             "MemberID": auth.userId,
-//             "SessionID": auth.sessionKey,
-//             "ParkingID": stationId,
-//             "GetInfoNum": 20,
-//             "GetInfoTopNum": 1,
-//             "UserID": "TYO", // Required, don't know why TYO is okay
-//             "ParkingEntID": "TYO", // Required, don't know why TYO is okay
-//         }
-//     }
-//     const res = await request.post(API_ENDPOINT, options)
-//     const decoded = iconv.decode(Buffer.from(res, "binary"), RESPONSE_ENCODING)
-//     const lines = decoded.split("\n")
-//     const bikeLines = lines.filter(line => /<a.*class=".*cycle_list_btn.*".*/.test(line))
-//     const stationNameHeaderLine = lines.find(line => line.includes("Port name"))
-//     return {
-//         name: lines[lines.indexOf(stationNameHeaderLine)+2],
-//         totalBikes: bikeLines.length
-//     }
-// }

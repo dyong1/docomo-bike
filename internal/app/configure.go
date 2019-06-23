@@ -4,6 +4,7 @@ import (
 	"docomo-bike/internal/auth"
 	"docomo-bike/internal/config"
 	"docomo-bike/internal/docomo"
+	"docomo-bike/internal/libs/logger"
 	"io/ioutil"
 	"os"
 	"time"
@@ -12,18 +13,18 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/google/logger"
 	"github.com/pkg/errors"
 )
 
 func (a *App) Configure(cfg config.Config) error {
-	a.Logger = logger.Init("APP", !cfg.Env.IsProd(), false, os.Stdout)
+	appLogger := logger.New("App", !cfg.Env.IsProd(), false, os.Stdout, !cfg.Env.IsProd())
+	a.Logger = appLogger
 
 	jwtConfig, err := jwtConfig(cfg)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
-	docomoClient := &docomo.ScrappingClient{}
+	docomoClient := docomo.NewScrappingClient(appLogger)
 	authService := &auth.DocomoJWTAuthService{
 		JWT:          jwtConfig,
 		DocomoClient: docomoClient,
