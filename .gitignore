@@ -60,3 +60,7 @@ Temporary Items
 .history
 
 # End of https://www.gitignore.io/api/go,macos,visualstudiocode
+
+
+debug
+__debug_bin
