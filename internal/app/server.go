@@ -1,23 +1,37 @@
 package app
 
 import (
+	"context"
 	"net/http"
+
+	"github.com/pkg/errors"
 )
 
+func NewServer(app *App) (*Server, error) {
+	return &Server{
+		app: app,
+	}, nil
+}
+
 type Server struct {
-	app *App
+	app        *App
+	httpServer *http.Server
 }
 
 func (s *Server) ServeHTTP(addr string) error {
-	return http.ListenAndServe(addr, s.app.Router)
+	s.httpServer = &http.Server{
+		Addr:    addr,
+		Handler: s.app.Router,
+	}
+	return s.httpServer.ListenAndServe()
 }
 
-func NewServer() (*Server, error) {
-	a := &App{}
-	if err := a.Configure(); err != nil {
-		return nil, err
+func (s *Server) Shutdown(ctx context.Context) error {
+	if err := s.app.Shutdown(ctx); err != nil {
+		return errors.Wrap(err, "Failed to shutdown app")
 	}
-	return &Server{
-		app: a,
-	}, nil
+	if err := s.httpServer.Shutdown(ctx); err != nil {
+		return errors.Wrap(err, "Failed to shutdown app")
+	}
+	return nil
 }
