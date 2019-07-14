@@ -1,13 +1,12 @@
 package app
 
 import (
-	"docomo-bike/internal/auth"
-	"docomo-bike/internal/booking"
 	"docomo-bike/internal/config"
-	"docomo-bike/internal/httphandler"
 	"docomo-bike/internal/libs/docomo/login"
-	"docomo-bike/internal/libs/logger"
-	"docomo-bike/internal/listing"
+	"docomo-bike/internal/libs/logging"
+	"docomo-bike/internal/services/auth"
+	"docomo-bike/internal/services/bikebooking"
+	"docomo-bike/internal/services/stationlisting"
 	"io/ioutil"
 	"os"
 	"time"
@@ -16,57 +15,41 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"github.com/pkg/errors"
 )
 
-func (a *App) Configure(cfg config.Config) error {
-	a.Logger = logger.New("App", !cfg.Env.IsProd(), false, os.Stdout, !cfg.Env.IsProd())
+func (cont *Container) Configure(cfg config.Config) error {
+	cont.AppLogger = logging.New("AppLogger", !cfg.Env.IsProd(), false, os.Stdout, !cfg.Env.IsProd())
+	cont.HTTPClientLogger = logging.New("HTTP Client", !cfg.Env.IsProd(), false, os.Stdout, !cfg.Env.IsProd())
 
 	jwtConfig, err := jwtConfig(cfg)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
 
-	httpClientLogger := logger.New("HTTP Client", !cfg.Env.IsProd(), false, os.Stdout, !cfg.Env.IsProd())
-	authService := authService(jwtConfig, httpClientLogger)
-	bookingService := bookingService(httpClientLogger)
-	listingReservationService := listingReservationService(httpClientLogger)
-
 	{
-		router := chi.NewRouter()
-		router.Use(middleware.Logger)
-		router.Use(middleware.Recoverer)
-
-		router.Post("/auth", httphandler.HandleAuthorize(authService))
-		router.Route("/me", func(me chi.Router) {
-			me.Use(httphandler.UseAuth(authService))
-			me.Post("/booking", httphandler.HandleBook(bookingService))
-			me.Get("/booking", httphandler.HandleGetReservations(listingReservationService))
-			me.Get("/booking/{bookingID}", httphandler.HandleGetReservation(listingReservationService))
-		})
-
-		a.Router = router
+		cont.JWTAuthService = authService(jwtConfig, cont.HTTPClientLogger)
+		cont.BikeBookingService = bikeBookingService(cont.HTTPClientLogger)
+		cont.StationListingService = statingListingService(cont.HTTPClientLogger)
 	}
 
 	return nil
 }
 
 func jwtConfig(cfg config.Config) (auth.JWTConfig, error) {
-	secret, err := ioutil.ReadFile(cfg.JWTSecretFilePath)
+	secret, err := ioutil.ReadFile(cfg.JWT.SecretFilePath)
 	if err != nil {
 		return auth.JWTConfig{}, errors.Wrap(err, "")
 	}
 	return auth.JWTConfig{
-		ExpiresIn:     time.Duration(cfg.JWTExpiresInSec * 1000 * 1000),
-		Issuer:        cfg.JWTIssuer,
+		ExpiresIn:     time.Duration(cfg.JWT.ExpiresInSec * 1000 * 1000),
+		Issuer:        cfg.JWT.Issuer,
 		Secret:        secret,
-		SigningMethod: jwt.GetSigningMethod(cfg.JWTSigningMethod),
+		SigningMethod: jwt.GetSigningMethod(cfg.JWT.SigningMethod),
 	}, nil
 }
 
-func authService(jwtConfig auth.JWTConfig, logger *logger.Logger) auth.JWTService {
+func authService(jwtConfig auth.JWTConfig, logger logging.Logger) auth.JWTService {
 	loginClient := &login.ScrappingClient{
 		HTTPClient: httpclient.NewClient(),
 		Logger:     logger,
@@ -77,9 +60,9 @@ func authService(jwtConfig auth.JWTConfig, logger *logger.Logger) auth.JWTServic
 	}
 }
 
-func bookingService(logger *logger.Logger) booking.Service {
-	return &booking.DocomoService{}
+func bikeBookingService(logger logging.Logger) bikebooking.Service {
+	return bikebooking.NewService()
 }
-func listingReservationService(logger *logger.Logger) listing.ReservationService {
-	return &listing.DocomoReservationService{}
+func statingListingService(logger logging.Logger) stationlisting.Service {
+	return stationlisting.NewService()
 }

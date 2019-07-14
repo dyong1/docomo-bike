@@ -1,37 +1,35 @@
-package app
+package http
 
 import (
 	"context"
+	"docomo-bike/internal/app"
 	"net/http"
 
 	"github.com/pkg/errors"
 )
 
-func NewServer(app *App) (*Server, error) {
-	return &Server{
-		app: app,
-	}, nil
+func NewServer() (*Server, error) {
+	return &Server{}, nil
 }
 
 type Server struct {
-	app        *App
+	container  *app.Container
 	httpServer *http.Server
 }
 
 func (s *Server) ServeHTTP(addr string) error {
 	s.httpServer = &http.Server{
-		Addr:    addr,
-		Handler: s.app.Router,
+		Addr: addr,
 	}
 	return s.httpServer.ListenAndServe()
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	if err := s.app.Shutdown(ctx); err != nil {
-		return errors.Wrap(err, "Failed to shutdown app")
+	if err := s.container.Shutdown(ctx); err != nil {
+		return errors.Wrap(err, "Failed to shutdown the app conatiner")
 	}
 	if err := s.httpServer.Shutdown(ctx); err != nil {
-		return errors.Wrap(err, "Failed to shutdown app")
+		return errors.Wrap(err, "Failed to shutdown the http server")
 	}
 	return nil
 }

@@ -8,23 +8,12 @@ import (
 )
 
 type Config struct {
-	Env            Environment `env:"ENV,required"`
-	HTTPServerHost string      `env:"HTTP_SERVER_HOST,required"`
-	HTTPServerPort string      `env:"HTTP_SERVER_PORT,required"`
+	Env Environment `env:"ENV"`
 
-	JWTExpiresInSec   int    `env:"JWT_EXPIRES_IN_SEC,required"`
-	JWTIssuer         string `env:"JWT_ISSUER,required"`
-	JWTSecretFilePath string `env:"JWT_SECRET_FILE_PATH,required"`
-	JWTSigningMethod  string `env:"JWT_SIGNING_METHOD,required"`
+	HTTPServer
+
+	JWT
 }
-
-func (cfg *Config) Load() error {
-	if err := env.Parse(cfg); err != nil {
-		return errors.Wrap(err, "Failed to parse envs")
-	}
-	return nil
-}
-
 type Environment string
 
 func (e Environment) IsProd() bool {
@@ -32,4 +21,23 @@ func (e Environment) IsProd() bool {
 }
 func (e Environment) IsDev() bool {
 	return strings.ToLower(string(e)) == "development"
+}
+
+type HTTPServer struct {
+	Host string `env:"HTTP_SERVER_HOST"`
+	Port string `env:"HTTP_SERVER_PORT"`
+}
+
+type JWT struct {
+	ExpiresInSec   int    `env:"JWT_EXPIRES_IN_SEC"`
+	Issuer         string `env:"JWT_ISSUER"`
+	SecretFilePath string `env:"JWT_SECRET_FILE_PATH"`
+	SigningMethod  string `env:"JWT_SIGNING_METHOD"`
+}
+
+func (cfg *Config) Load() error {
+	if err := env.Parse(cfg); err != nil {
+		return errors.Wrap(err, "Failed to parse envs")
+	}
+	return nil
 }

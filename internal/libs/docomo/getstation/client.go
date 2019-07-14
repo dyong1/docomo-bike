@@ -1,8 +1,8 @@
 package getstation
 
 import (
-	"docomo-bike/internal/auth"
-	"docomo-bike/internal/libs/logger"
+	"docomo-bike/internal/libs/logging"
+	"docomo-bike/internal/services/auth"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -35,7 +35,7 @@ type Client interface {
 
 type ScrappingClient struct {
 	HTTPClient *httpclient.Client
-	Logger     *logger.Logger
+	Logger     logging.Logger
 }
 
 type Station struct {

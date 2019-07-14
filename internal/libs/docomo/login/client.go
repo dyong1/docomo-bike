@@ -1,7 +1,7 @@
 package login
 
 import (
-	"docomo-bike/internal/libs/logger"
+	"docomo-bike/internal/libs/logging"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -30,7 +30,7 @@ type Client interface {
 
 type ScrappingClient struct {
 	HTTPClient *httpclient.Client
-	Logger     *logger.Logger
+	Logger     logging.Logger
 }
 
 func (c *ScrappingClient) Login(userID string, password string) (string, error) {

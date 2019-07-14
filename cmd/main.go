@@ -4,8 +4,9 @@ import (
 	"context"
 	"docomo-bike/internal/app"
 	"docomo-bike/internal/config"
+	"docomo-bike/internal/http"
 	"fmt"
-	"net/http"
+	nethttp "net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,25 +20,28 @@ func main() {
 
 	cfg := config.Config{}
 	if err := cfg.Load(); err != nil {
-		l.Fatalf("Failed to parse env variables: %v", err)
+		l.Fatalf("Failed to parse env variables: %+v", err)
 	}
 	l.Infof("Config loaded: %s", spew.Sdump(cfg))
 
-	a, err := app.NewApp(cfg)
-	if err != nil {
-		l.Fatalf("Failed to create an app: %v", err)
+	cont := app.NewContainer()
+	if err := cont.Configure(cfg); err != nil {
+		l.Fatalf("Failed to configure the app container: %+v", err)
 	}
-	srv, err := app.NewServer(a)
+	srv, err := http.NewServer()
 	if err != nil {
-		l.Fatalf("Failed to create a server: %v", err)
+		l.Fatalf("Failed to create a server: %+v", err)
+	}
+	if err := http.Routes(srv, cont); err != nil {
+		l.Fatalf("Failed to add routes to the server: %+v", err)
 	}
 
-	addr := fmt.Sprintf("%s:%s", cfg.HTTPServerHost, cfg.HTTPServerPort)
+	addr := fmt.Sprintf("%s:%s", cfg.HTTPServer.Host, cfg.HTTPServer.Port)
 	l.Infof("Listening on %s", addr)
 
 	err = srv.ServeHTTP(addr)
-	if err != http.ErrServerClosed {
-		l.Fatalf("Server stopped unexpectedly: %v", err)
+	if err != nethttp.ErrServerClosed {
+		l.Fatalf("Server stopped unexpectedly: %+v", err)
 	}
 
 	idleConnsClosed := make(chan struct{})
@@ -46,7 +50,7 @@ func main() {
 
 	l.Error("Server shutdown")
 }
-func watchSignal(idleConnsClosed chan struct{}, srv *app.Server) {
+func watchSignal(idleConnsClosed chan struct{}, srv *http.Server) {
 	sigint := make(chan os.Signal, 1)
 
 	// interrupt signal sent from terminal
@@ -57,7 +61,7 @@ func watchSignal(idleConnsClosed chan struct{}, srv *app.Server) {
 	<-sigint
 
 	if err := srv.Shutdown(context.Background()); err != nil {
-		logger.Fatalf("Failed shutting down server: %v", err)
+		logger.Fatalf("Failed shutting down server: %+v", err)
 	}
 	close(idleConnsClosed)
 }

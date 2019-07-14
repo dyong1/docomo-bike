@@ -1,10 +1,9 @@
-package httphandler
+package http
 
 import (
 	"context"
-	"docomo-bike/internal/auth"
-	"docomo-bike/internal/libs/httpreq"
-	"docomo-bike/internal/libs/httpres"
+	"docomo-bike/internal/services/auth"
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -19,17 +18,18 @@ func HandleAuthorize(authService auth.JWTService) http.HandlerFunc {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		var reqBody requestBody
-		if err := httpreq.JSONBody(r, &reqBody); err != nil {
-			httpres.Error(w, http.StatusBadRequest, err)
+		dec := json.NewDecoder(r.Body)
+		if err := dec.Decode(&reqBody); err != nil {
+			badRequest(w, err)
 			return
 		}
 
 		authResult, err := authService.Authorize(reqBody.UserID, reqBody.PlainPassword)
 		if err != nil {
-			httpres.Error(w, http.StatusInternalServerError, err)
+			internalServerError(w, err)
 			return
 		}
-		httpres.JSON(w, responseBody{
+		jsonres(w, responseBody{
 			Token: authResult.TokenString,
 		})
 	}
@@ -40,12 +40,12 @@ func UseAuth(authService auth.JWTService) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			hh := r.Header["Authorization"]
 			if len(hh) != 2 {
-				httpres.Error(w, http.StatusUnauthorized, fmt.Errorf("Invalid authorization"))
+				unauthorized(w, fmt.Errorf("Invalid authorization"))
 				return
 			}
 			auth, err := authService.AuthFromToken(hh[1])
 			if err != nil {
-				httpres.Error(w, http.StatusUnauthorized, err)
+				unauthorized(w, err)
 				return
 			}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), AuthContextKey{}, auth)))
