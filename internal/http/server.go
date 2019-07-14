@@ -9,7 +9,9 @@ import (
 )
 
 func NewServer() (*Server, error) {
-	return &Server{}, nil
+	return &Server{
+		httpServer: &http.Server{},
+	}, nil
 }
 
 type Server struct {
@@ -18,9 +20,7 @@ type Server struct {
 }
 
 func (s *Server) ServeHTTP(addr string) error {
-	s.httpServer = &http.Server{
-		Addr: addr,
-	}
+	s.httpServer.Addr = addr
 	return s.httpServer.ListenAndServe()
 }
 

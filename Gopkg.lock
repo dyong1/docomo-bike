@@ -2,20 +2,20 @@
 
 
 [[projects]]
+  digest = "1:9f3b30d9f8e0d7040f729b82dcbc8f0dead820a133b3147ce355fc451f32d761"
+  name = "github.com/BurntSushi/toml"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005"
+  version = "v0.3.1"
+
+[[projects]]
   digest = "1:0a801165a09e19d89a02a952f5b1eac69c06dbdc87dc2f6af5e9008ecf5b864b"
   name = "github.com/alioygur/gores"
   packages = ["."]
   pruneopts = "UT"
   revision = "4ec206ff4e3cfa5a5219d752241e89fb7d2f59e8"
   version = "v1.2.1"
-
-[[projects]]
-  digest = "1:71be6302fa0607e391a2b8a2b763eb5b624ee65add3966984cb3a9465faf51df"
-  name = "github.com/caarlos0/env"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "4bd75bf16b9ef8c1383109b5e4d931bd72c3b6d0"
-  version = "v6.0.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -72,6 +72,14 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:0865912344ac2e3b7e5768da0a4305de8f8ea95efbd96f553e93f49a37857d58"
+  name = "github.com/jinzhu/configor"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9064de4b2535f218bde55dc8de50a3904ef800d0"
+  version = "v1.1.0"
+
+[[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
@@ -107,18 +115,26 @@
   pruneopts = "UT"
   revision = "fae7ac547cb717d141c433a2a173315e216b64c4"
 
+[[projects]]
+  digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
+  version = "v2.2.2"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/alioygur/gores",
-    "github.com/caarlos0/env",
     "github.com/davecgh/go-spew/spew",
     "github.com/dgrijalva/jwt-go",
     "github.com/go-chi/chi",
     "github.com/go-chi/chi/middleware",
     "github.com/gojektech/heimdall/httpclient",
     "github.com/google/logger",
+    "github.com/jinzhu/configor",
     "github.com/pkg/errors",
     "github.com/stretchr/testify/assert",
   ]

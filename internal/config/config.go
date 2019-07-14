@@ -1,26 +1,16 @@
 package config
 
 import (
-	"strings"
-
-	"github.com/caarlos0/env"
+	"github.com/jinzhu/configor"
 	"github.com/pkg/errors"
 )
 
 type Config struct {
-	Env Environment `env:"ENV"`
+	Env string `env:"ENV"`
 
 	HTTPServer
 
 	JWT
-}
-type Environment string
-
-func (e Environment) IsProd() bool {
-	return strings.ToLower(string(e)) == "production"
-}
-func (e Environment) IsDev() bool {
-	return strings.ToLower(string(e)) == "development"
 }
 
 type HTTPServer struct {
@@ -36,7 +26,7 @@ type JWT struct {
 }
 
 func (cfg *Config) Load() error {
-	if err := env.Parse(cfg); err != nil {
+	if err := configor.Load(cfg); err != nil {
 		return errors.Wrap(err, "Failed to parse envs")
 	}
 	return nil

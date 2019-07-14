@@ -3,6 +3,7 @@ package app
 import (
 	"docomo-bike/internal/config"
 	"docomo-bike/internal/libs/docomo/login"
+	"docomo-bike/internal/libs/env"
 	"docomo-bike/internal/libs/logging"
 	"docomo-bike/internal/services/auth"
 	"docomo-bike/internal/services/bikebooking"
@@ -19,8 +20,8 @@ import (
 )
 
 func (cont *Container) Configure(cfg config.Config) error {
-	cont.AppLogger = logging.New("AppLogger", !cfg.Env.IsProd(), false, os.Stdout, !cfg.Env.IsProd())
-	cont.HTTPClientLogger = logging.New("HTTP Client", !cfg.Env.IsProd(), false, os.Stdout, !cfg.Env.IsProd())
+	cont.AppLogger = logging.New("AppLogger", !env.IsProd(cfg.Env), false, os.Stdout, !env.IsProd(cfg.Env))
+	cont.HTTPClientLogger = logging.New("HTTP Client", !env.IsProd(cfg.Env), false, os.Stdout, !env.IsProd(cfg.Env))
 
 	jwtConfig, err := jwtConfig(cfg)
 	if err != nil {
