@@ -15,6 +15,13 @@ type JWTService interface {
 	AuthFromToken(tokenString string) (*Auth, error)
 }
 
+func NewService(jwt JWTConfig, loginClient login.Client) JWTService {
+	return &DocomoJWTService{
+		JWT:         jwt,
+		LoginClient: loginClient,
+	}
+}
+
 type JWTAuthResult struct {
 	UserID      string
 	TokenString string
@@ -34,8 +41,8 @@ type Auth struct {
 type jwtClaims struct {
 	jwt.StandardClaims
 
-	UserID     string
-	SessionKey string
+	UserID     string `json:"userId"`
+	SessionKey string `json:"sessionKey"`
 }
 
 type DocomoJWTService struct {

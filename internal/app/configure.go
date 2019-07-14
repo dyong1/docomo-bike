@@ -2,6 +2,7 @@ package app
 
 import (
 	"docomo-bike/internal/config"
+	"docomo-bike/internal/libs/docomo/getstation"
 	"docomo-bike/internal/libs/docomo/login"
 	"docomo-bike/internal/libs/env"
 	"docomo-bike/internal/libs/logging"
@@ -23,15 +24,23 @@ func (cont *Container) Configure(cfg config.Config) error {
 	cont.AppLogger = logging.New("AppLogger", !env.IsProd(cfg.Env), false, os.Stdout, !env.IsProd(cfg.Env))
 	cont.HTTPClientLogger = logging.New("HTTP Client", !env.IsProd(cfg.Env), false, os.Stdout, !env.IsProd(cfg.Env))
 
+	cont.DocomoClients.Login = &login.ScrappingClient{
+		HTTPClient: httpclient.NewClient(),
+		Logger:     cont.HTTPClientLogger,
+	}
+	cont.DocomoClients.GetStation = &getstation.ScrappingClient{
+		HTTPClient: httpclient.NewClient(),
+		Logger:     cont.HTTPClientLogger,
+	}
+
 	jwtConfig, err := jwtConfig(cfg)
 	if err != nil {
 		return errors.Wrap(err, "")
 	}
-
 	{
-		cont.JWTAuthService = authService(jwtConfig, cont.HTTPClientLogger)
-		cont.BikeBookingService = bikeBookingService(cont.HTTPClientLogger)
-		cont.StationListingService = statingListingService(cont.HTTPClientLogger)
+		cont.JWTAuthService = auth.NewService(jwtConfig, cont.DocomoClients.Login)
+		cont.BikeBookingService = bikebooking.NewService()
+		cont.StationListingService = stationlisting.NewService(cont.DocomoClients.GetStation)
 	}
 
 	return nil
@@ -43,27 +52,9 @@ func jwtConfig(cfg config.Config) (auth.JWTConfig, error) {
 		return auth.JWTConfig{}, errors.Wrap(err, "")
 	}
 	return auth.JWTConfig{
-		ExpiresIn:     time.Duration(cfg.JWT.ExpiresInSec * 1000 * 1000),
+		ExpiresIn:     time.Duration(cfg.JWT.ExpiresInSec) * time.Second,
 		Issuer:        cfg.JWT.Issuer,
 		Secret:        secret,
 		SigningMethod: jwt.GetSigningMethod(cfg.JWT.SigningMethod),
 	}, nil
-}
-
-func authService(jwtConfig auth.JWTConfig, logger logging.Logger) auth.JWTService {
-	loginClient := &login.ScrappingClient{
-		HTTPClient: httpclient.NewClient(),
-		Logger:     logger,
-	}
-	return &auth.DocomoJWTService{
-		JWT:         jwtConfig,
-		LoginClient: loginClient,
-	}
-}
-
-func bikeBookingService(logger logging.Logger) bikebooking.Service {
-	return bikebooking.NewService()
-}
-func statingListingService(logger logging.Logger) stationlisting.Service {
-	return stationlisting.NewService()
 }

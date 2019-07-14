@@ -2,7 +2,6 @@ package getstation
 
 import (
 	"docomo-bike/internal/libs/logging"
-	"docomo-bike/internal/services/auth"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -18,19 +17,20 @@ import (
 const (
 	getStationEventNo     = "25701"
 	getStationAPIEndpoint = "https://tcc.docomo-cycle.jp/cycle/TYO/cs_web_main.php"
-	getStationPageSize    = "100"
+	getStationPageSize    = "40"
 )
 const (
+	ToranomonSotoboriStreet    = 10069
 	StationRoppongiHills       = 10082
 	StationNishiSimbashi1Chome = 10070
 )
 
 var (
-	bikeLineRegex = regexp.MustCompile("<a.*class=\".*cycle_list_btn.*\".*")
+	bikeIDRegex = regexp.MustCompile(`.*tab_([A-Z]+_\d+).submit`)
 )
 
 type Client interface {
-	GetStation(auth *auth.Auth, stationID string) (*Station, error)
+	GetStation(userID string, sessionKey string, stationID string) (*Station, error)
 }
 
 type ScrappingClient struct {
@@ -39,20 +39,24 @@ type ScrappingClient struct {
 }
 
 type Station struct {
-	Name       string
-	TotalBikes int
+	Name  string
+	Bikes []*Bike
+}
+type Bike struct {
+	ID string
 }
 
-func (c *ScrappingClient) GetStation(auth *auth.Auth, stationID string) (*Station, error) {
+func (c *ScrappingClient) GetStation(userID string, sessionKey string, stationID string) (*Station, error) {
 	data := url.Values{}
 	data.Add("EventNo", getStationEventNo)
-	data.Add("MemberID", auth.UserID)
-	data.Add("SessionID", auth.SessionKey)
+	data.Add("MemberID", userID)
+	data.Add("SessionID", sessionKey)
 	data.Add("ParkingID", stationID)
 	data.Add("GetInfoNum", getStationPageSize)
 	data.Add("GetInfoTopNum", "1")  // First page
 	data.Add("UserID", "TYO")       // Required, don't know why TYO is okay
 	data.Add("ParkingEntID", "TYO") // Required, don't know why TYO is okay
+
 	dataEncoded := data.Encode()
 	headers := http.Header{}
 	headers.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -69,19 +73,32 @@ func (c *ScrappingClient) GetStation(auth *auth.Auth, stationID string) (*Statio
 	lines := strings.Split(string(htmlBytes), "\n")
 	c.Logger.Debugf("Get station response html: %s", spew.Sdump(lines))
 
-	bikeLines := []string{}
-	var stationNameLineAt int
+	bikes := []*Bike{}
+	stationNameLineAt := -1
 	for idx, l := range lines {
-		if bikeLineRegex.MatchString(l) {
-			bikeLines = append(bikeLines, l)
-		}
 		if strings.Contains(l, "Port name") {
 			stationNameLineAt = idx
 		}
+		if bid := extractBikeID(l); bid != "" {
+			bikes = append(bikes, &Bike{
+				ID: bid,
+			})
+		}
+	}
+	if stationNameLineAt < 0 {
+		return nil, nil
 	}
 
 	return &Station{
-		Name:       lines[stationNameLineAt+2],
-		TotalBikes: len(bikeLines),
+		Name:  lines[stationNameLineAt+2],
+		Bikes: bikes,
 	}, nil
+}
+
+func extractBikeID(l string) string {
+	matches := bikeIDRegex.FindStringSubmatch(l)
+	if len(matches) < 2 {
+		return ""
+	}
+	return matches[1]
 }

@@ -8,6 +8,6 @@ import (
 
 func jsonres(w http.ResponseWriter, body interface{}) {
 	if err := gores.JSON(w, http.StatusOK, body); err != nil {
-		internalServerError(w, err)
+		internalServerError(w, err.Error())
 	}
 }

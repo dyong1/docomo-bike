@@ -5,6 +5,7 @@ import (
 	"docomo-bike/internal/app"
 	"docomo-bike/internal/config"
 	"docomo-bike/internal/http"
+	"docomo-bike/internal/libs/env"
 	"fmt"
 	nethttp "net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-chi/chi"
 	"github.com/google/logger"
 )
 
@@ -32,8 +34,18 @@ func main() {
 	if err != nil {
 		l.Fatalf("Failed to create a server: %+v", err)
 	}
-	if err := http.Routes(srv, cont); err != nil {
+	routes, err := http.Routes(srv, cont)
+	if err != nil {
 		l.Fatalf("Failed to add routes to the server: %+v", err)
+	}
+	if env.IsDev(cfg.Env) {
+		err = chi.Walk(routes, func(method string, route string, handler nethttp.Handler, middlewares ...func(nethttp.Handler) nethttp.Handler) error {
+			l.Infof(`Route added: [%s] %s`, method, route)
+			return nil
+		})
+		if err != nil {
+			l.Fatalf("Failed to walk routes: %+v", err)
+		}
 	}
 
 	addr := fmt.Sprintf("%s:%s", cfg.HTTPServer.Host, cfg.HTTPServer.Port)

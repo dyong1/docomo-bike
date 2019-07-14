@@ -2,10 +2,11 @@ package http
 
 import (
 	"context"
+	"docomo-bike/internal/libs/docomo/login"
 	"docomo-bike/internal/services/auth"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strings"
 )
 
 func HandleAuthorize(authService auth.JWTService) http.HandlerFunc {
@@ -20,13 +21,13 @@ func HandleAuthorize(authService auth.JWTService) http.HandlerFunc {
 		var reqBody requestBody
 		dec := json.NewDecoder(r.Body)
 		if err := dec.Decode(&reqBody); err != nil {
-			badRequest(w, err)
+			badRequest(w, err.Error())
 			return
 		}
 
 		authResult, err := authService.Authorize(reqBody.UserID, reqBody.PlainPassword)
 		if err != nil {
-			internalServerError(w, err)
+			internalServerError(w, err.Error())
 			return
 		}
 		jsonres(w, responseBody{
@@ -35,22 +36,35 @@ func HandleAuthorize(authService auth.JWTService) http.HandlerFunc {
 	}
 }
 
-func UseAuth(authService auth.JWTService) func(http.Handler) http.Handler {
+func UseAuth(authService auth.JWTService, loginClient login.Client) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			hh := r.Header["Authorization"]
+			hh := strings.Split(r.Header.Get("Authorization"), " ")
 			if len(hh) != 2 {
-				unauthorized(w, fmt.Errorf("Invalid authorization"))
+				unauthorized(w, "Invalid authorization")
 				return
 			}
 			auth, err := authService.AuthFromToken(hh[1])
 			if err != nil {
-				unauthorized(w, err)
+				unauthorized(w, err.Error())
 				return
 			}
-			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), AuthContextKey{}, auth)))
+			tr, err := loginClient.Test(auth.UserID, auth.SessionKey)
+			if err != nil {
+				unauthorized(w, err.Error())
+				return
+			}
+			if !tr {
+				unauthorized(w, "Session in the token has been expired.")
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), authContextKey{}, auth)))
 		})
 	}
 }
 
-type AuthContextKey struct{}
+type authContextKey struct{}
+
+func authFromContext(ctx context.Context) *auth.Auth {
+	return ctx.Value(authContextKey{}).(*auth.Auth)
+}
