@@ -68,3 +68,7 @@ type authContextKey struct{}
 func authFromContext(ctx context.Context) *auth.Auth {
 	return ctx.Value(authContextKey{}).(*auth.Auth)
 }
+func userIDFromContext(ctx context.Context) string {
+	auth := ctx.Value(authContextKey{}).(*auth.Auth)
+	return auth.UserID
+}
