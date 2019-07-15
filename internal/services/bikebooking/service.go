@@ -11,6 +11,7 @@ type Service interface {
 
 type BookingDetail struct {
 	ID             int64
+	BookerID       string
 	StationID      string
 	ProgressStatus BookingProgressStatus
 	BookingResult  *BookingResult
@@ -19,6 +20,9 @@ type BookingDetail struct {
 }
 type BookingProgressStatus int
 
+func (s BookingProgressStatus) Int() int {
+	return int(s)
+}
 func (s BookingProgressStatus) String() string {
 	switch s {
 	case ProgressStatusPending:
@@ -44,8 +48,10 @@ var (
 )
 
 type BookingResult struct {
-	BikeID   string
-	BookedAt time.Time
+	ID        int64
+	BikeID    string
+	StationID string
+	BookedAt  time.Time
 }
 
 func NewService() Service {

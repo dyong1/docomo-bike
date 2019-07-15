@@ -8,7 +8,7 @@ import (
 )
 
 func TestBooking(t *testing.T) {
-	serv := NewService()
+	serv := &DocomoService{}
 
 	beginAt := time.Now()
 	d, err := serv.BeginBooking("bookerID", "stationID")
@@ -20,11 +20,11 @@ func TestBooking(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, current)
 
-	completed, err := serv.CompleteBooking(current.ID)
+	completed, err := serv.CompleteBooking(current.ID, "bikeID")
 	assert.NoError(t, err)
 	assert.NotNil(t, completed)
 	assert.Equal(t, ProgressStatusBooked, completed.ProgressStatus)
-	assert.NotNil(t, completed.BookingResult)
+	assert.Equal(t, "bikeID", completed.BookingResult.BikeID)
 	assert.NotNil(t, completed.BookingResult.BookedAt)
 }
 func verifyBeginBooking(t *testing.T, beginAt time.Time, d *BookingDetail, err error) {
@@ -42,7 +42,7 @@ func verifyBeginBooking(t *testing.T, beginAt time.Time, d *BookingDetail, err e
 }
 
 func TestCanceling(t *testing.T) {
-	serv := NewService()
+	serv := &DocomoService{}
 	d, err := serv.BeginBooking("stationID", "bookerID")
 	assert.NoError(t, err)
 	assert.NotNil(t, d)
