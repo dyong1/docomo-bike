@@ -17,11 +17,6 @@ func Routes(srv *Server, cont *app.Container) (chi.Routes, error) {
 	ar := r.With(UseAuth(cont.JWTAuthService, cont.DocomoClients.Login))
 	ar.Get("/stations/{stationId}", HandleGetStation(cont.StationListingService))
 
-	ar.Post("/bookings", HandleNewBikeBooking(cont.BikeBookingService))
-	ar.Get("/bookings/current", HandleGetCurrentBikeBooking(cont.BikeBookingService))
-	ar.Post("/bookings/current/cancel", HandleCancelBikeBooking(cont.BikeBookingService))
-	ar.Post("/bookings/{bookingId}/complete", HandleCompleteBookingBike(cont.BikeBookingService))
-
 	srv.httpServer.Handler = r
 
 	return r, nil
