@@ -1,12 +1,12 @@
 package http
 
 import (
-	"docomo-bike/internal/services/stationlisting"
+	"docomo-bike/internal/services/listing"
 	"fmt"
 	"net/http"
 )
 
-func HandleGetStation(serv stationlisting.Service) http.HandlerFunc {
+func HandleGetStation(serv listing.Service) http.HandlerFunc {
 	var urlParams struct {
 		StationID string `urlParam:"stationId"`
 	}

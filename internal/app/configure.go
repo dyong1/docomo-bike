@@ -1,14 +1,15 @@
 package app
 
 import (
+	"context"
 	"docomo-bike/internal/config"
 	"docomo-bike/internal/libs/docomo/getstation"
 	"docomo-bike/internal/libs/docomo/login"
 	"docomo-bike/internal/libs/env"
 	"docomo-bike/internal/libs/logging"
 	"docomo-bike/internal/services/auth"
-	"docomo-bike/internal/services/bikebooking"
-	"docomo-bike/internal/services/stationlisting"
+	"docomo-bike/internal/services/booking"
+	"docomo-bike/internal/services/listing"
 	"io/ioutil"
 	"os"
 	"time"
@@ -39,8 +40,8 @@ func (cont *Container) Configure(cfg config.Config) error {
 	}
 	{
 		cont.JWTAuthService = auth.NewService(jwtConfig, cont.DocomoClients.Login)
-		cont.BikeBookingService = bikebooking.NewService()
-		cont.StationListingService = stationlisting.NewService(cont.DocomoClients.GetStation)
+		cont.BikeBookingService = booking.NewService()
+		cont.StationListingService = listing.NewService(cont.DocomoClients.GetStation)
 	}
 
 	return nil
@@ -57,4 +58,8 @@ func jwtConfig(cfg config.Config) (auth.JWTConfig, error) {
 		Secret:        secret,
 		SigningMethod: jwt.GetSigningMethod(cfg.JWT.SigningMethod),
 	}, nil
+}
+
+func (c *Container) Shutdown(ctx context.Context) error {
+	return nil
 }
