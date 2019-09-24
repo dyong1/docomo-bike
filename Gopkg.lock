@@ -72,6 +72,14 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
   digest = "1:0865912344ac2e3b7e5768da0a4305de8f8ea95efbd96f553e93f49a37857d58"
   name = "github.com/jinzhu/configor"
   packages = ["."]
@@ -96,6 +104,22 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:e096613fb7cf34743d49af87d197663cfccd61876e2219853005a57baedfa562"
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f2b07da1e2c38d5f12845a4f607e2e1018cbb1f5"
+  version = "v0.0.5"
+
+[[projects]]
+  digest = "1:524b71991fc7d9246cc7dc2d9e0886ccb97648091c63e30eef619e6862c955dd"
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2e9d26c8c37aae03e3f9d4e90b7116f5accb7cab"
+  version = "v1.0.5"
+
+[[projects]]
   digest = "1:972c2427413d41a1e06ca4897e8528e5a1622894050e2f527b38ddf0f343f759"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
@@ -114,14 +138,6 @@
   ]
   pruneopts = "UT"
   revision = "fae7ac547cb717d141c433a2a173315e216b64c4"
-
-[[projects]]
-  digest = "1:a4b04b5314d49a67ad022fa7693453ee2b823ab99314f52fa3930ed31085dfef"
-  name = "gopkg.in/guregu/null.v3"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "80515d440932108546bcade467bb7d6968e812e2"
-  version = "v3.4.0"
 
 [[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
@@ -144,8 +160,8 @@
     "github.com/google/logger",
     "github.com/jinzhu/configor",
     "github.com/pkg/errors",
+    "github.com/spf13/cobra",
     "github.com/stretchr/testify/assert",
-    "gopkg.in/guregu/null.v3",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
