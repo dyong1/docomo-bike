@@ -1,53 +1,18 @@
 package booking
 
-import "time"
-
-type Service interface {
-	BookAnyBikeInStation(stationID string) (*BookingDetail, error)
-}
-
-type BookingDetail struct {
-	ID             int64
-	BookerID       string
-	StationID      string
-	ProgressStatus BookingProgressStatus
-	BookingResult  *BookingResult
-	StartedAt      time.Time
-	CanceledAt     *time.Time
-}
-type BookingProgressStatus int
-
-func (s BookingProgressStatus) Int() int {
-	return int(s)
-}
-func (s BookingProgressStatus) String() string {
-	switch s {
-	case ProgressStatusPending:
-		return "Pending"
-	case ProgressStatusFindingBike:
-		return "Finding a bike"
-	case ProgressStatusBooked:
-		return "Booked"
-	case ProgressStatusCanceled:
-		return "Canceled"
-	}
-	return ""
-}
-
-var (
-	ProgressStatusPending     BookingProgressStatus = 1
-	ProgressStatusFindingBike BookingProgressStatus = 2
-	ProgressStatusBooked      BookingProgressStatus = 11
-	ProgressStatusCanceled    BookingProgressStatus = 102
+import (
+	"docomo-bike/internal/libs/docomo/bookbike"
+	"time"
 )
 
-type BookingResult struct {
-	ID        int64
-	BikeID    string
-	StationID string
-	BookedAt  time.Time
+type Service interface {
+	BookBike(bike *Bike) (*BookingResult, error)
 }
 
-func NewService() Service {
-	return nil
+type Bike = bookbike.Bike
+
+type BookingResult struct {
+	BikeID   string
+	Passcode string
+	BookedAt time.Time
 }

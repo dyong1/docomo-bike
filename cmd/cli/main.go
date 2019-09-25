@@ -38,7 +38,10 @@ func main() {
 	}, loginClient)
 	listingServ := listing.NewService(getstationClient)
 
-	var rootCmd = &cobra.Command{Use: "docomo"}
-	rootCmd.AddCommand(commands.Station(authServ, listingServ))
+	stationCmd := commands.Station(authServ, listingServ)
+	stationCmd.AddCommand(commands.StationBook(authServ, listingServ, bookingServ))
+
+	rootCmd := &cobra.Command{Use: "docomo"}
+	rootCmd.AddCommand(stationCmd)
 	rootCmd.Execute()
 }

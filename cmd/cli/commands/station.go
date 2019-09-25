@@ -41,7 +41,7 @@ func Station(
 		}
 		station, err := listingServ.GetStation(auth, stationName)
 		if err != nil {
-			log.Fatalf("Failed to login [error=%s]", err.Error())
+			log.Fatalf("Failed to get station [error=%s]", err.Error())
 			return
 		}
 		if station == nil {
