@@ -38,6 +38,16 @@ type ScrappingClient struct {
 	Logger     logging.Logger
 }
 
+// EventNo: 25701
+// SessionID: ******
+// UserID: TYO
+// MemberID: ******
+// GetInfoNum: 20
+// GetInfoTopNum: 1
+// ParkingEntID: TYO
+// ParkingID: 10131
+// ParkingLat: 35.656991
+// ParkingLon: 139.740739
 type Station struct {
 	Name  string
 	Bikes []*Bike
@@ -45,6 +55,19 @@ type Station struct {
 type Bike struct {
 	ID string
 }
+
+// EventNo: 25901
+// SessionID: ******
+// UserID: TYO
+// MemberID: ******
+// CenterLat: 35.653608
+// CenterLon: 139.731380
+// CycLat: 35.653637
+// CycLon: 139.731303
+// CycleID: 13141
+// AttachID: 23209
+// CycleTypeNo: 14
+// CycleEntID: TYO
 
 func (c *ScrappingClient) GetStation(userID string, sessionKey string, stationID string) (*Station, error) {
 	data := url.Values{}
